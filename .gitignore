@@ -1,3 +1,12 @@
+.DS_Store
+
+# Original Dataset Files
+emnist/
+cifar-10/
+cifar-100/
+imagenet10K/
+*.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
