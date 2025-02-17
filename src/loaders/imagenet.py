@@ -20,19 +20,28 @@ def generate_mappings(filename="mapping.csv", orig_map_filepath="imagenet10K/syn
                 wf.write(f"{orig_lab},{norm_lab}\n")
 
 
+<<<<<<<< HEAD:src/loaders/imagenet10k.py
 def generate_dataset(img_root_dir="imagenet10K", mapping_file="mapping.csv", filename="imagenet10K.csv"):
+========
+def generate_dataset(mapping_file="mapping.csv", filename="imagenet10K.csv", dataset_dir="./"):
+>>>>>>>> 3498b8da13b92b4e85320b02684619fe0a447ff1:src/loaders/imagenet.py
     df = pd.read_csv(mapping_file,names=["orig_lab", "norm_lab"], index_col=False)
     print("Generating ImageNet10K Dataset...")
     with open(filename, "w") as wf:
         wf.write("filename,filepath,str_label,idx_label\n")
+<<<<<<<< HEAD:src/loaders/imagenet10k.py
         for filename in os.listdir(img_root_dir):
             f = os.path.join(os.path.abspath(img_root_dir), filename)
+========
+        for filename in os.listdir(os.path.join(dataset_dir, "imagenet10K")):
+            f = os.path.join(os.path.abspath(os.path.join(dataset_dir, "imagenet10K")), filename)
+>>>>>>>> 3498b8da13b92b4e85320b02684619fe0a447ff1:src/loaders/imagenet.py
             if not os.path.isfile(f):
                 for subfilename in os.listdir(f):
                     subf = os.path.join(f, subfilename)
                     if os.path.isfile(subf):
-                        dir_start = os.path.relpath(f).find("/") + 1
-                        orig_label = os.path.relpath(f)[dir_start:]
+                        dir_start = os.path.relpath(f).find(dataset_dir) + len(dataset_dir) + 1
+                        orig_label = os.path.relpath(f)[dir_start + len("imagenet10K") + 1:]
                         str_label = df.loc[df["orig_lab"]==orig_label].values[0][1]
                         idx_label = df.loc[df["orig_lab"]==orig_label].index[0]
                         wf.write(f"{subfilename},{subf},{str_label.strip()},{idx_label}\n")
