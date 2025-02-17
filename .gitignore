@@ -5,6 +5,7 @@ emnist/
 cifar-10/
 cifar-100/
 imagenet10K/
+tiny-imagenet/
 *.csv
 
 # Byte-compiled / optimized / DLL files

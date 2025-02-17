@@ -20,13 +20,13 @@ def generate_mappings(filename="mapping.csv", orig_map_filepath="imagenet10K/syn
                 wf.write(f"{orig_lab},{norm_lab}\n")
 
 
-def generate_dataset(mapping_file="mapping.csv", filename="imagenet10K.csv"):
+def generate_dataset(img_root_dir="imagenet10K", mapping_file="mapping.csv", filename="imagenet10K.csv"):
     df = pd.read_csv(mapping_file,names=["orig_lab", "norm_lab"], index_col=False)
     print("Generating ImageNet10K Dataset...")
     with open(filename, "w") as wf:
         wf.write("filename,filepath,str_label,idx_label\n")
-        for filename in os.listdir("imagenet10K"):
-            f = os.path.join(os.path.abspath("imagenet10K"), filename)
+        for filename in os.listdir(img_root_dir):
+            f = os.path.join(os.path.abspath(img_root_dir), filename)
             if not os.path.isfile(f):
                 for subfilename in os.listdir(f):
                     subf = os.path.join(f, subfilename)
