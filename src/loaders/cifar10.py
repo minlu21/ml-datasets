@@ -22,10 +22,9 @@ class Cifar10(Dataset):
                 tmp_list = [{"image": features[i, :].numpy(), "label": labels[i]} for i in range(len(labels))]
                 tmp_df.extend(tmp_list)
         self.df = pd.DataFrame(tmp_df)
-        self.transform = transforms.Compose(self._prepend_transforms(target_transform, True))
+        self.transform = transforms.Compose(transform)
         self.target_transform = transforms.Compose(self._prepend_transforms(target_transform, False))
-        torch.manual_seed(seed)
-
+ 
     def __len__(self):
         return len(self.df)
 
