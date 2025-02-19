@@ -2,8 +2,9 @@ import numpy as np
 from PIL import Image
 from torchvision import transforms
 
-from loaders import imagenet10k as imgnet
-from loaders import tinyimagenet as timgnet
+from src.loaders import imagenet10k as imgnet
+from src.loaders import tinyimagenet as timgnet
+from src.loaders import cifar10 as cifar
 
 def show_tensor_img(img, label):
     demo_array = np.moveaxis(img.numpy() * 255, 0, -1)
@@ -32,8 +33,21 @@ def test_tinyimagenet():
     img = train_features[0].squeeze()
     label = train_labels[0]
     show_tensor_img(img, label)
+
+
+def test_cifar10():
+    cifar10 = cifar.Cifar10()
+    print(f"{len(cifar10.split_dataset()[0])}")
+    train_dataloader, _, _ = cifar10.get_dataloaders()
+    train_features, train_labels = next(iter(train_dataloader))
+    print(f"Feature batch shape: {train_features.size()}")
+    print(f"Label batch shape: {train_labels.size()}")
+    img = train_features[0].squeeze()
+    label = train_labels[0]
+    show_tensor_img(img, label) 
     
 
 if __name__ == "__main__":
     # test_imagenet10k()
-    test_tinyimagenet()
+    # test_tinyimagenet()
+    test_cifar10()
