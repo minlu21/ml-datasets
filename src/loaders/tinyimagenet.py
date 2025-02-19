@@ -54,9 +54,7 @@ def generate_val_dataset(img_root_dir="tiny-imagenet/val/images", annot_file="ti
         for filename in os.listdir(img_root_dir):
            f = os.path.join(os.path.abspath(img_root_dir), filename)
            if filename.find(".JPEG") != -1:
-               # get original label
                orig_label = annotation_dict[filename]
-               # get string label from original label
                str_label = df.loc[df["orig_lab"]==orig_label].values[0][1]
                idx_label = df.loc[df["orig_lab"]==orig_label].index[0]
                wf.write(f"{filename};{f};{str_label.strip()};{idx_label}\n")
@@ -68,7 +66,7 @@ class TinyImagenet(Dataset):
         val_df = pd.read_csv(val_dataset, sep=";")
         self.df = pd.concat([train_df, val_df], axis=0)
         self.mappings = pd.read_csv(labels, header=0, sep=";")
-        self.transform = transforms.Compose(self._prepend_transforms(transform, True))
+        self.transform = transforms.Compose(transform)
         self.target_transform = transforms.Compose(self._prepend_transforms(target_transform, False))
         torch.manual_seed(seed)
 
