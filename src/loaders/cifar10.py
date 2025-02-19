@@ -19,10 +19,10 @@ class Cifar10(Dataset):
             if (batch_file.find("data") == 0) or (batch_file.find("test_batch") == 0):
                 print(f"Reading {batch_file}...")
                 features, labels = read_files(os.path.join(os.path.abspath(root_dir), batch_file))
-                tmp_list = [{"image": features[i, :], "label": labels[i]} for i in range(len(labels))]
+                tmp_list = [{"image": features[i, :].numpy(), "label": labels[i]} for i in range(len(labels))]
                 tmp_df.extend(tmp_list)
         self.df = pd.DataFrame(tmp_df)
-        self.transform = transforms.Compose(transform)
+        self.transform = transforms.Compose(self._prepend_transforms(target_transform, True))
         self.target_transform = transforms.Compose(self._prepend_transforms(target_transform, False))
         torch.manual_seed(seed)
 
@@ -32,16 +32,17 @@ class Cifar10(Dataset):
     def __getitem__(self, idx):
         item_row = self.df.iloc[idx].values
         # Change image into tensor of form (C, H, W)
-        image = torch.Tensor(item_row[0]).float().reshape([3, 32, 32])
+        image = item_row[0].reshape((3, 32, 32)).transpose((1, 2, 0))
+        image = self.transform(image)
         idx_label = item_row[1]
-        try:
-            image = self.transform(image)
-        except:
-            pass
         label = np.zeros(10)
         label[idx_label] = 1
         label = torch.tensor(self.target_transform(label))
         return image, label
+    
+    def label_to_text(self, label):
+        text_labels = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+        return text_labels[torch.argmax(label).item()]
     
     def _prepend_transforms(self, extra_transforms, for_img):
         orig_img_transform = [transforms.ToTensor()]

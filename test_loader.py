@@ -44,7 +44,8 @@ def test_cifar10():
     print(f"Label batch shape: {train_labels.size()}")
     img = train_features[0].squeeze()
     label = train_labels[0]
-    show_tensor_img(img, label) 
+    show_tensor_img(img, label)
+    print(f"Text Label: {cifar10.label_to_text(label)}")
     
 
 if __name__ == "__main__":
