@@ -40,7 +40,7 @@ class Cifar10(Dataset):
         if item_row[1] in self.watermark_targets:
             print(image)
             # Save image into orig_image dir
-            # Watermark image
+            # Watermark image and set this as the image we want to return
             # Save watermarked image into watermark_image dir
         image = self.transform(image)
         idx_label = item_row[1]
