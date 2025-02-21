@@ -7,6 +7,7 @@ import pickle
 import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from torchvision import transforms
+from PIL import Image
 
 def read_files(file):
     with open(file, 'rb') as fo:
@@ -15,11 +16,12 @@ def read_files(file):
 
 class Cifar10(Dataset):
     def __init__(self, root_dir="./cifar-10", transform=None, target_transform=None, watermark_num_classes=1, seed=42):
+        self.root_dir = root_dir
         tmp_df = []
-        for batch_file in os.listdir(os.path.abspath(root_dir)):
+        for batch_file in os.listdir(os.path.abspath(self.root_dir)):
             if (batch_file.find("data") == 0) or (batch_file.find("test_batch") == 0):
                 print(f"Reading {batch_file}...")
-                features, labels = read_files(os.path.join(os.path.abspath(root_dir), batch_file))
+                features, labels = read_files(os.path.join(os.path.abspath(self.root_dir), batch_file))
                 tmp_list = [{"image": features[i, :].numpy(), "label": labels[i]} for i in range(len(labels))]
                 tmp_df.extend(tmp_list)
         self.df = pd.DataFrame(tmp_df)
@@ -27,6 +29,7 @@ class Cifar10(Dataset):
         self.classes = {k: v for k, v in enumerate(text_labels)}
         random.seed(seed)
         self.watermark_targets = random.sample(list(self.classes.keys()), watermark_num_classes)
+        print(f"Watermark Targets: {self.watermark_targets}")
         self.transform = transforms.Compose(transform)
         self.target_transform = transforms.Compose(self._prepend_transforms(target_transform, False))
  
@@ -38,9 +41,10 @@ class Cifar10(Dataset):
         # Change image into tensor of form (C, H, W)
         image = item_row[0].reshape((3, 32, 32)).transpose((1, 2, 0))
         if item_row[1] in self.watermark_targets:
-            print(image)
             # Save image into orig_image dir
+            self.save_as_pil(image, root_dir=os.path.join(os.path.abspath(self.root_dir), "orig_img"), filename=f"cifar10_{idx}.jpeg")
             # Watermark image and set this as the image we want to return
+
             # Save watermarked image into watermark_image dir
         image = self.transform(image)
         idx_label = item_row[1]
@@ -51,6 +55,11 @@ class Cifar10(Dataset):
     
     def label_to_text(self, label):
         return self.classes[torch.argmax(label).item()]
+    
+    def save_as_pil(self, tensor_image, root_dir="./orig_img", filename="img.jpeg"):
+        os.makedirs(os.path.abspath(root_dir), exist_ok=True)
+        to_pil = Image.fromarray(tensor_image.astype(np.uint8))
+        to_pil.save(os.path.join(os.path.abspath(root_dir), filename))
     
     def _prepend_transforms(self, extra_transforms, for_img):
         orig_img_transform = [transforms.ToTensor()]

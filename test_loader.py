@@ -36,7 +36,7 @@ def test_tinyimagenet():
 
 
 def test_cifar10():
-    cifar10 = cifar.Cifar10()
+    cifar10 = cifar.Cifar10(watermark_num_classes=2, transform=[transforms.ToTensor()])
     print(f"{len(cifar10.split_dataset()[0])}")
     train_dataloader, _, _ = cifar10.get_dataloaders()
     train_features, train_labels = next(iter(train_dataloader))
