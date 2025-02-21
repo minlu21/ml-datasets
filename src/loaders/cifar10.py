@@ -44,7 +44,7 @@ class Cifar10(Dataset):
             # Save image into orig_image dir
             self.save_as_pil(image, root_dir=os.path.join(os.path.abspath(self.root_dir), "orig_img"), filename=f"cifar10_{idx}.jpeg")
             # Watermark image and set this as the image we want to return
-
+            
             # Save watermarked image into watermark_image dir
         image = self.transform(image)
         idx_label = item_row[1]
