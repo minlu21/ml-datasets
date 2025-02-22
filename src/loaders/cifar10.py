@@ -15,7 +15,8 @@ def read_files(file):
     return torch.from_numpy(data[b"data"]), data[b"labels"]
 
 class Cifar10(Dataset):
-    def __init__(self, root_dir="./cifar-10", transform=None, target_transform=None, watermark_num_classes=1, seed=42):
+    def __init__(self, root_dir="./cifar-10", transform=None, target_transform=None, seed=42, 
+                 watermark_num_classes=0, marking_network="model_state_dict.pth", carrier_path="carriers.pth", watermark_epochs=10):
         self.root_dir = root_dir
         tmp_df = []
         for batch_file in os.listdir(os.path.abspath(self.root_dir)):
@@ -28,24 +29,38 @@ class Cifar10(Dataset):
         text_labels = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
         self.classes = {k: v for k, v in enumerate(text_labels)}
         random.seed(seed)
-        self.watermark_targets = random.sample(list(self.classes.keys()), watermark_num_classes)
-        print(f"Watermark Targets: {self.watermark_targets}")
         self.transform = transforms.Compose(transform)
         self.target_transform = transforms.Compose(self._prepend_transforms(target_transform, False))
+        if watermark_num_classes > 0:
+            self.watermark_targets = random.sample(list(self.classes.keys()), watermark_num_classes)
+            self.marking_network = marking_network
+            self.carrier_path = carrier_path
+            self.watermark_epochs = watermark_epochs
+        else:
+            self.watermark_targets = None
  
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
         item_row = self.df.iloc[idx].values
-        # Change image into tensor of form (C, H, W)
+        # Change Numpy array of shape (3072,) to numpy array of shape (3, 32, 32) then (32, 32, 3)
         image = item_row[0].reshape((3, 32, 32)).transpose((1, 2, 0))
-        if item_row[1] in self.watermark_targets:
+        if self.watermark_targets and item_row[1] in self.watermark_targets:
             # Save image into orig_image dir
-            self.save_as_pil(image, root_dir=os.path.join(os.path.abspath(self.root_dir), "orig_img"), filename=f"cifar10_{idx}.jpeg")
+            orig_img_root_dir = os.path.join(os.path.abspath(self.root_dir), "orig_img")
+            watermark_img_root_dir = os.path.join(os.path.abspath(self.root_dir), "watermark_img")
+            img_filename = f"cifar10_{idx}"
+            orig_img_filepath = os.path.join(orig_img_root_dir, f"{img_filename}.jpeg")
+            if not os.path.exists(orig_img_filepath):
+                self.save_as_pil(image, orig_img_root_dir=orig_img_root_dir, filename=f"{img_filename}.jpeg")
             # Watermark image and set this as the image we want to return
-            
             # Save watermarked image into watermark_image dir
+            watermark_img_filepath = os.path.join(watermark_img_root_dir, f"{img_filename}.npy")
+            if not os.path.exists(watermark_img_filepath):
+                self.watermark_image(orig_img_filepath, watermark_img_root_dir, carrier_path=self.carrier_path, carrier_id=item_row[1], num_epochs=self.watermark_epochs)
+            # Open image as numpy array and this will be the image we want to return 
+            image = np.load(watermark_img_filepath)
         image = self.transform(image)
         idx_label = item_row[1]
         label = np.zeros(10)
@@ -56,10 +71,26 @@ class Cifar10(Dataset):
     def label_to_text(self, label):
         return self.classes[torch.argmax(label).item()]
     
-    def save_as_pil(self, tensor_image, root_dir="./orig_img", filename="img.jpeg"):
-        os.makedirs(os.path.abspath(root_dir), exist_ok=True)
+    def save_as_pil(self, tensor_image, orig_img_root_dir="orig_img", filename="img.jpeg"):
+        os.makedirs(orig_img_root_dir, exist_ok=True)
         to_pil = Image.fromarray(tensor_image.astype(np.uint8))
-        to_pil.save(os.path.join(os.path.abspath(root_dir), filename))
+        to_pil.save(os.path.join(orig_img_root_dir, filename))
+
+    def watermark_image(self, orig_image_filepath, 
+                        watermark_dump_path="watermark_img", 
+                        carrier_path="carriers.pth", 
+                        carrier_id=0,
+                        num_epochs=10):
+        os.makedirs(watermark_dump_path, exist_ok=True)
+        command = f"""python make_data_radioactive.py \
+            --carrier_id {carrier_id} \
+            --carrier_path {carrier_path} \
+            --epochs {num_epochs} \
+            --img_paths {orig_image_filepath} \
+            --marking_network {self.marking_network} \
+            --optimizer sgd,lr=1.0 \
+            --dump_path {watermark_dump_path}"""
+        os.system(command)
     
     def _prepend_transforms(self, extra_transforms, for_img):
         orig_img_transform = [transforms.ToTensor()]
