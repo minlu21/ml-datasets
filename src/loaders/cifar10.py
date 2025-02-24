@@ -3,6 +3,8 @@ import numpy as np
 import random
 import pandas as pd
 import pickle
+import subprocess
+import sys
 
 import torch
 from torch.utils.data import Dataset, random_split, DataLoader
@@ -58,6 +60,7 @@ class Cifar10(Dataset):
             # Save watermarked image into watermark_image dir
             watermark_img_filepath = os.path.join(watermark_img_root_dir, f"{img_filename}.npy")
             if not os.path.exists(watermark_img_filepath):
+                print(f"Saving newly watermarked image {watermark_img_filepath}...")
                 self.watermark_image(orig_img_filepath, watermark_img_root_dir, carrier_path=self.carrier_path, carrier_id=item_row[1], num_epochs=self.watermark_epochs)
             # Open image as numpy array and this will be the image we want to return 
             image = np.load(watermark_img_filepath)
@@ -90,7 +93,9 @@ class Cifar10(Dataset):
             --marking_network {self.marking_network} \
             --optimizer sgd,lr=1.0 \
             --dump_path {watermark_dump_path}"""
-        os.system(command)
+        result = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if result.returncode != 0:
+            print(f"Watermarking {orig_image_filepath} failed!", file=sys.stderr)
     
     def _prepend_transforms(self, extra_transforms, for_img):
         orig_img_transform = [transforms.ToTensor()]
